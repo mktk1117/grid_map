@@ -202,6 +202,42 @@ void GridMapRosConverter::toPointCloud(const grid_map::GridMap& gridMap,
   }
 }
 
+// void GridMapRosConverter::toPointCloud(const grid_map::GridMap& gridMap,
+//                          const std::string& pointLayer,
+//                          pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud)
+// {
+//   double resolution = gridMap.getResolution();
+//   for (GridMapIterator it(gridMap); !it.isPastEnd(); ++it) {
+//     Position position;
+//     gridMap.getPosition(*it, position);
+//     double centerValue = gridMap.at(pointLayer, *it);
+//     double maxValue = std::numeric_limits<float>::min();
+//     for (int i = -1; i <= 1; i++){
+//       for (int j = -1; j <= 1; j++){
+//         if( i * j == 0 && !(i == 0 && j == 0)){
+//           Position p = position + Position(i * resolution, j * resolution);
+//           Eigen::Array2i index_p;
+//           if(!gridMap.getIndex(p, index_p)) continue;
+//           double value = gridMap.at(pointLayer, index_p);
+//           if( value < centerValue && value > maxValue){
+//               maxValue = value;
+//           }
+//         }
+//       }
+//     }
+//     pcl::PointXYZ p(position.x, position.y, centerValue);
+//     pointcloud->push_back(p);
+//     if( maxValue > std::numeric_limits<float>::min()){
+//       double valueDifference = centerValue - maxValue;
+//       for(int i = 0; i < valueDifference / resolution; i++){
+//         double z = centerValue - resolution * i;
+//         pcl::PointXYZ p(position.x, position.y, z);
+//         pointcloud->push_back(p);
+//       }
+//     }
+//   }
+// }
+
 bool GridMapRosConverter::fromOccupancyGrid(const nav_msgs::OccupancyGrid& occupancyGrid,
                                             const std::string& layer, grid_map::GridMap& gridMap)
 {

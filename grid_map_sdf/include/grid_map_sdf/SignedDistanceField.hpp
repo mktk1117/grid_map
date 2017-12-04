@@ -27,8 +27,11 @@ class SignedDistanceField
   void calculateSignedDistanceField(const GridMap& gridMap, const std::string& layer, const double heightClearance);
   double getDistanceAt(const Position3& position);
   Vector3 getDistanceGradientAt(const Position3& position);
+  Vector3 getHorizontalDistanceGradientAt(const Position3& position);
   double getInterpolatedDistanceAt(const Position3& position);
   void convertToPointCloud(pcl::PointCloud<pcl::PointXYZI>& points);
+
+  void calculateHorizontalSignedDistanceField(const GridMap& gridMap, const std::string& layer, const double heightClearance);
 
  private:
   Matrix getPlanarSignedDistanceField(Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>& data);
@@ -37,6 +40,7 @@ class SignedDistanceField
   Size size_;
   Position position_;
   std::vector<Matrix> data_;
+  std::vector<Matrix> horizontalData_;
   float zIndexStartHeight_;
   float maxDistance_;
 };

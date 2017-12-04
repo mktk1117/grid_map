@@ -28,8 +28,51 @@ SignedDistanceField::~SignedDistanceField()
 {
 }
 
-void SignedDistanceField::calculateSignedDistanceField(const GridMap& gridMap, const std::string& layer,
-                                                       const double heightClearance)
+void SignedDistanceField::calculateHorizontalSignedDistanceField(const GridMap& gridMap, const std::string& layer, const double heightClearance)
+{
+  horizontalData_.clear();
+  resolution_ = gridMap.getResolution();
+  position_ = gridMap.getPosition();
+  size_ = gridMap.getSize();
+  Matrix map = gridMap.get(layer);
+
+  // Get min and max height and fill the max height in the NAN area.
+  float minHeight = map.minCoeffOfFinites();
+  float maxHeight = map.maxCoeffOfFinites();
+  float maxDistance = 10000;
+
+  for (size_t i = 0; i < map.size(); ++i) {
+    if (std::isnan(map(i))) map(i) = maxHeight;
+  }
+
+  // Height range of the signed distance field is higher than the max height.
+  maxHeight += heightClearance;
+  minHeight -= heightClearance;
+
+  Matrix sdfElevationAbove = Matrix::Ones(map.rows(), map.cols()) * maxDistance_;
+  Matrix sdfLayer = Matrix::Zero(map.rows(), map.cols());
+  std::vector<Matrix> sdf;
+  zIndexStartHeight_ = minHeight;
+
+  // Calculate signed distance field from bottom.
+  for (float h = minHeight; h < maxHeight; h += resolution_) {
+    Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> obstacleFreeField = map.array() < h;
+    Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> obstacleField = obstacleFreeField.array() < 1;
+    Matrix sdfObstacle = getPlanarSignedDistanceField(obstacleField);
+    Matrix sdfObstacleFree = getPlanarSignedDistanceField(obstacleFreeField);
+    Matrix sdf2d;
+    // If 2d sdfObstacleFree calculation failed, neglect this sdf
+    // to avoid extreme small distances (-INF).
+    if ((sdfObstacleFree.array() >= INF).any() || (sdfObstacle.array() >= INF).any()) sdf2d = Matrix::Ones(map.rows(), map.cols()) * maxDistance;
+    // else if ((sdfObstacleFree.array() >= INF).any())
+    //   sdf2d = sdfObstacle;
+    else sdf2d = sdfObstacle - sdfObstacleFree;
+    sdf2d *= resolution_;
+    horizontalData_.push_back(sdf2d);
+  }
+}
+
+void SignedDistanceField::calculateSignedDistanceField(const GridMap& gridMap, const std::string& layer, const double heightClearance)
 {
   data_.clear();
   resolution_ = gridMap.getResolution();
@@ -38,7 +81,7 @@ void SignedDistanceField::calculateSignedDistanceField(const GridMap& gridMap, c
   Matrix map = gridMap.get(layer);
 
   // Get min and max height and fill the max height in the NAN area.
-  const float minHeight = map.minCoeffOfFinites();
+  float minHeight = map.minCoeffOfFinites();
   float maxHeight = map.maxCoeffOfFinites();
 
   for (size_t i = 0; i < map.size(); ++i) {
@@ -47,6 +90,7 @@ void SignedDistanceField::calculateSignedDistanceField(const GridMap& gridMap, c
 
   // Height range of the signed distance field is higher than the max height.
   maxHeight += heightClearance;
+  minHeight -= heightClearance;
 
   Matrix sdfElevationAbove = Matrix::Ones(map.rows(), map.cols()) * maxDistance_;
   Matrix sdfLayer = Matrix::Zero(map.rows(), map.cols());
@@ -152,6 +196,25 @@ Vector3 SignedDistanceField::getDistanceGradientAt(const Position3& position)
   k = std::min(k, (int)data_.size() - 2);
   double dx = (data_[k](i - 1, j) - data_[k](i + 1, j)) / (2 * resolution_);
   double dy = (data_[k](i, j - 1) - data_[k](i, j + 1)) / (2 * resolution_);
+  double dz = (data_[k + 1](i, j) - data_[k - 1](i, j)) / (2 * resolution_);
+  return Vector3(dx, dy, dz);
+}
+
+Vector3 SignedDistanceField::getHorizontalDistanceGradientAt(const Position3& position)
+{
+  double xCenter = size_.x() / 2.0;
+  double yCenter = size_.y() / 2.0;
+  int i = std::round(xCenter - (position.x() - position_.x()) / resolution_);
+  int j = std::round(yCenter - (position.y() - position_.y()) / resolution_);
+  int k = std::round((position.z() - zIndexStartHeight_) / resolution_);
+  i = std::max(i, 1);
+  i = std::min(i, size_.x() - 2);
+  j = std::max(j, 1);
+  j = std::min(j, size_.y() - 2);
+  k = std::max(k, 1);
+  k = std::min(k, (int)data_.size() - 2);
+  double dx = (horizontalData_[k](i - 1, j) - horizontalData_[k](i + 1, j)) / (2 * resolution_);
+  double dy = (horizontalData_[k](i, j - 1) - horizontalData_[k](i, j + 1)) / (2 * resolution_);
   double dz = (data_[k + 1](i, j) - data_[k - 1](i, j)) / (2 * resolution_);
   return Vector3(dx, dy, dz);
 }

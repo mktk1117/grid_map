@@ -63,6 +63,10 @@ class GridMapPclConverter
   static bool addLayerFromPolygonMesh(const pcl::PolygonMesh& mesh, const std::string& layer,
                                       grid_map::GridMap& gridMap);
 
+  static void toPointCloud(const grid_map::GridMap& gridMap,
+                           const std::string& pointLayer,
+                           pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud);
+
  private:
   static bool rayTriangleIntersect(const Eigen::Vector3f& point,
                                    const Eigen::Vector3f& ray,

@@ -96,6 +96,20 @@ class GridMapRosConverter
                            sensor_msgs::PointCloud2& pointCloud);
 
   /*!
+   * Converts a grid map object to a pcl pointcloud message. Set the layer to be transformed
+   * as the points of the point cloud with `pointLayer` and all other types to be added as
+   * additional layers with `layers`.
+   * @param[in] gridMap the grid map object.
+   * @param[in] layers the layers that should be added as fields to the point cloud. Must include the `pointLayer`.
+   * @param[in] pointLayer the layer that is transformed to points.
+   * @param[out] pointCloud the message to be populated.
+   */
+  // static void toPointCloud(const grid_map::GridMap& gridMap,
+  //                          const std::vector<std::string>& layers,
+  //                          const std::string& pointLayer,
+  //                          pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud);
+
+  /*!
    * Converts an occupancy grid message to a layer of a grid map.
    * @param[in] occupancyGrid the occupancy grid to be converted.
    * @param[in] layer the layer to which the occupancy grid will be converted.
