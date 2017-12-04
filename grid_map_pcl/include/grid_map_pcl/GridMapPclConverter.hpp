@@ -67,6 +67,10 @@ class GridMapPclConverter
                            const std::string& pointLayer,
                            pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud);
 
+  static void toGridMap(grid_map::GridMap& gridMap,
+                           const std::string& pointLayer,
+                           const pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud);
+
  private:
   static bool rayTriangleIntersect(const Eigen::Vector3f& point,
                                    const Eigen::Vector3f& ray,

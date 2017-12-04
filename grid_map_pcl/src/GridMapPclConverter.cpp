@@ -150,9 +150,10 @@ void GridMapPclConverter::toPointCloud(const grid_map::GridMap& gridMap,
   double resolution = gridMap.getResolution();
   for (GridMapIterator it(gridMap); !it.isPastEnd(); ++it) {
     Position position;
-    gridMap.getPosition(*it, position);
+    if(!gridMap.getPosition(*it, position)) continue;
     double centerValue = gridMap.at(pointLayer, *it);
     double maxValue = std::numeric_limits<float>::min();
+    if (std::isnan(centerValue)) continue;
     for (int i = -1; i <= 1; i++){
       for (int j = -1; j <= 1; j++){
         if( i * j == 0 && !(i == 0 && j == 0)){
@@ -175,6 +176,21 @@ void GridMapPclConverter::toPointCloud(const grid_map::GridMap& gridMap,
         pointCloud->push_back(p);
       }
     }
+  }
+}
+
+void GridMapPclConverter::toGridMap(grid_map::GridMap& gridMap,
+                         const std::string& pointLayer,
+                         const pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud)
+{
+  for (size_t i = 0; i < pointCloud->points.size (); ++i){
+    const auto& point = pointCloud->points[i];
+    Position position(point.x, point.y);
+    Index index;
+    if(!gridMap.getIndex(position, index)) continue;
+    auto& elevation = gridMap.at("elevation", index);
+    if (std::isnan(elevation) || point.z > elevation)
+      elevation = point.z;
   }
 }
 

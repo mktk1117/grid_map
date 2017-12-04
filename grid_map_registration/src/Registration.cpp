@@ -81,8 +81,8 @@ void Registration::align(GridMap& alignedMap, Eigen::Affine3d& transform)
     for (size_t i = 0; i < cloud->points.size (); ++i){
       auto& point = cloud->points[i];
       Eigen::Vector3d p(point.x, point.y, point.z);
-      double d = baseSdf_.getInterpolatedDistanceAt(p);
 
+      double d = baseSdf_.getInterpolatedDistanceAt(p);
       centerOfCloud += p;
       totalSquareDistance += d * d;
       // signD = 1 if d > 0, -1 if d < 0
@@ -104,8 +104,6 @@ void Registration::align(GridMap& alignedMap, Eigen::Affine3d& transform)
     totalMoment /= cloud->points.size();
     centerOfCloud /= cloud->points.size();
     prevCenterOfCloud = centerOfCloud;
-    std::cout << "total moment = " << totalMoment << std::endl;
-    std::cout << "totalGradient = " << totalGradient << std::endl;
 
     if (totalSquareDistance < distanceThreshold_ && totalMoment < momentThreshold_)
       break;
@@ -120,14 +118,18 @@ void Registration::align(GridMap& alignedMap, Eigen::Affine3d& transform)
       }
     }
 
-    applyYawRotation(cloud, centerOfCloud, totalMoment * 0.2);
-    applyTranslation(cloud, totalGradient * 0.5);
+    applyYawRotation(cloud, centerOfCloud, totalMoment);
+    applyTranslation(cloud, totalGradient);
 
-    translation += totalGradient * 0.5;
-    yaw += totalMoment * 0.2;
+    translation += totalGradient;
+    yaw += totalMoment;
   }
   transform = Eigen::Affine3d(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
   transform *= Eigen::Translation3d(translation);
+
+  // make aligned map
+  alignedMap = baseMap_;
+  GridMapPclConverter::toGridMap(alignedMap, "elevation", cloud);
 }
 
 void Registration::applyYawRotation(PointCloud<PointXYZ>::Ptr cloud, Eigen::Vector3d center, double yaw)
